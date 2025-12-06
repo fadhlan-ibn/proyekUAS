@@ -20,28 +20,40 @@ class CashTransactionRepository
      *
      * @param  int  $year  The year for which to calculate the sums.
      */
-    public function calculateTransactionSums(): SupportCollection
-    {
-        $startOfWeek = now()->startOfWeek()->toDateString();
-        $endOfWeek = now()->endOfWeek()->toDateString();
+    public function calculateTransactionSums(?string $selectedMonth = null): \Illuminate\Support\Collection
+{
+    // Jika tidak pilih bulan → pakai bulan sekarang
+    $month = $selectedMonth
+        ? \Carbon\Carbon::createFromFormat('Y-m', $selectedMonth)
+        : now();
 
-        $yearSum = $this->model->select('date_paid', 'amount')->whereYear('date_paid', now()->year)->sum('amount');
+    // Tentukan range tanggal bulan tersebut
+    $startOfMonth = $month->copy()->startOfMonth()->toDateString();
+    $endOfMonth   = $month->copy()->endOfMonth()->toDateString();
 
-        $monthSum = $this->model->select('date_paid', 'amount')->whereMonth('date_paid', now()->month)->sum('amount');
+    // Tahun yang dipilih user
+    $year = $month->year;
 
-        $weekSum = $this->model->select('date_paid', 'amount')->whereBetween('date_paid', [$startOfWeek, $endOfWeek])
-            ->sum('amount');
+    return collect([
+        'year'  => $this->model->whereYear('date_paid', $year)->sum('amount'),
 
-        $todaySum = $this->model->select('date_paid', 'amount')->whereDate('date_paid', now()->today())
-            ->sum('amount');
+        'month' => $this->model
+            ->whereYear('date_paid', $year)
+            ->whereMonth('date_paid', $month->month)
+            ->sum('amount'),
 
-        return collect([
-            'year' => $yearSum,
-            'month' => $monthSum,
-            'week' => $weekSum,
-            'today' => $todaySum,
-        ]);
-    }
+        'week' => $this->model
+            ->whereBetween('date_paid', [
+                now()->startOfWeek()->toDateString(),
+                now()->endOfWeek()->toDateString()
+            ])
+            ->sum('amount'),
+
+        'today' => $this->model
+            ->whereDate('date_paid', today())
+            ->sum('amount'),
+    ]);
+}
 
     /**
      * Get total monthly transaction amounts for a given year.

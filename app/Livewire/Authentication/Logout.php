@@ -9,7 +9,7 @@ use Livewire\Component;
 class Logout extends Component
 {
     /**
-     * Log out the user and redirect to the login page.
+     * Log out the user and redirect to the homepage.
      */
     public function logout(): void
     {
@@ -18,7 +18,8 @@ class Logout extends Component
         session()->invalidate();
         session()->regenerateToken();
 
-        $this->redirect(Login::class);
+        // Redirect ke homepage, bukan login
+        $this->redirect('/');
     }
 
     /**

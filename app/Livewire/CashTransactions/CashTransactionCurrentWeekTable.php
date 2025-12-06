@@ -25,15 +25,11 @@ class CashTransactionCurrentWeekTable extends Component
     use WithPagination;
 
     protected StudentRepository $studentRepository;
-
     protected CashTransactionRepository $cashTransactionRepository;
 
     public ?string $query = '';
-
     public int $limit = 5;
-
     public string $orderByColumn = 'date_paid';
-
     public string $orderBy = 'desc';
 
     public ?array $currentWeek = [];
@@ -60,8 +56,9 @@ class CashTransactionCurrentWeekTable extends Component
      */
     public function mount(): void
     {
-        $this->currentWeek['startOfWeek'] = now()->startOfWeek()->format('d-m-Y');
-        $this->currentWeek['endOfWeek'] = now()->endOfWeek()->format('d-m-Y');
+        // FIX FORMAT TANGGAL (WAJIB)
+        $this->currentWeek['startOfWeek'] = now()->startOfWeek()->toDateString();
+        $this->currentWeek['endOfWeek']   = now()->endOfWeek()->toDateString();
     }
 
     #[Computed]
@@ -93,8 +90,8 @@ class CashTransactionCurrentWeekTable extends Component
     {
         $summaries = $this->cashTransactionRepository->calculateTransactionSums();
         $paidStatus = $this->studentRepository->getStudentPaymentStatus(
-            now()->createFromDate($this->currentWeek['startOfWeek'])->format('Y-m-d'),
-            now()->createFromDate($this->currentWeek['endOfWeek'])->format('Y-m-d')
+            $this->currentWeek['startOfWeek'],
+            $this->currentWeek['endOfWeek']
         );
 
         return [
@@ -116,20 +113,25 @@ class CashTransactionCurrentWeekTable extends Component
                 'student.schoolClass',
                 'createdBy',
             ])
-            ->whereBetween('date_paid', [
-                now()->createFromDate($this->currentWeek['startOfWeek'])->startOfDay(),
-                now()->createFromDate($this->currentWeek['endOfWeek'])->endOfDay(),
-            ])
-            ->when($this->filters['user_id'], fn (Builder $q) => $q->where('created_by', $this->filters['user_id']))
-            ->when($this->filters['schoolMajorID'], fn (Builder $q) => $q->whereRelation('student', 'school_major_id', $this->filters['schoolMajorID']))
-            ->when($this->filters['schoolClassID'], fn (Builder $q) => $q->whereRelation('student', 'school_class_id', $this->filters['schoolClassID']))
+
+
+
+            ->when($this->filters['user_id'], fn (Builder $q) =>
+                $q->where('created_by', $this->filters['user_id'])
+            )
+            ->when($this->filters['schoolMajorID'], fn (Builder $q) =>
+                $q->whereRelation('student', 'school_major_id', $this->filters['schoolMajorID'])
+            )
+            ->when($this->filters['schoolClassID'], fn (Builder $q) =>
+                $q->whereRelation('student', 'school_class_id', $this->filters['schoolClassID'])
+            )
             ->search($this->query)
             ->orderBy($this->orderByColumn, $this->orderBy)
             ->paginate($this->limit);
     }
 
     /**
-     * This method is automatically triggered whenever a property of the component is updated.
+     * Auto reset pagination when filters change
      */
     public function updated(): void
     {
@@ -144,11 +146,12 @@ class CashTransactionCurrentWeekTable extends Component
     #[On('cash-transaction-deleted')]
     public function render(): View
     {
-        return view('livewire.cash-transactions.cash-transaction-current-week-table');
+        return view('livewire.cash-transactions.cash-transaction-current-week-table')
+            ->layout('components.layouts.app');
     }
 
     /**
-     * Reset the filter criteria to default values.
+     * Reset filter criteria
      */
     public function resetFilter(): void
     {

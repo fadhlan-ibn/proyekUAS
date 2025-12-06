@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 use Livewire\WithPagination;
+use Carbon\Carbon;
 
 #[Title('Halaman Filter Transaksi Kas')]
 class FilterCashTransaction extends Component
@@ -17,20 +18,17 @@ class FilterCashTransaction extends Component
     use WithPagination;
 
     protected StudentRepository $studentRepository;
-
     protected CashTransactionRepository $cashTransactionRepository;
 
-    public ?string $start_date = '';
+    /** FILTER BULAN (YYYY-MM) */
+    public ?string $selected_month = null;
 
-    public ?string $end_date = '';
-
+    /** Pencarian nama siswa */
     public ?string $query = '';
 
-    public ?array $statistics = [];
+    /** Statistik */
+    public array $statistics = [];
 
-    /**
-     * Boot the component.
-     */
     public function boot(
         StudentRepository $studentRepository,
         CashTransactionRepository $cashTransactionRepository
@@ -39,13 +37,11 @@ class FilterCashTransaction extends Component
         $this->cashTransactionRepository = $cashTransactionRepository;
     }
 
-    /**
-     * Initialize the component's state.
-     */
     public function mount(): void
     {
+        $this->selected_month = date('Y-m'); // default bulan ini
+
         $this->statistics = [
-            'totalCurrentWeek' => 0,
             'totalCurrentMonth' => 0,
             'totalCurrentYear' => 0,
             'studentsNotPaidLimit' => collect(),
@@ -54,42 +50,57 @@ class FilterCashTransaction extends Component
         ];
     }
 
-    /**
-     * This method is automatically triggered whenever a property of the component is updated.
-     */
+    /** Reset pagination saat filter berubah */
     public function updated(): void
     {
         $this->resetPage();
     }
 
-    /**
-     * Render the view.
-     */
     public function render(): View
     {
-        $sumAmountDateRange = CashTransaction::whereBetween('date_paid', [$this->start_date, $this->end_date])->sum('amount');
+        /** =====================================
+         *  PARSE BULAN
+         *  ===================================== */
+        $month = $this->selected_month
+            ? Carbon::createFromFormat('Y-m', $this->selected_month)
+            : Carbon::now();
 
+        $start = $month->copy()->startOfMonth()->toDateString();
+        $end   = $month->copy()->endOfMonth()->toDateString();
+
+        /** =====================================
+         *  TOTAL PENDAPATAN PADA BULAN TERPILIH
+         *  ===================================== */
+        $sumAmountDateRange = CashTransaction::whereBetween('date_paid', [$start, $end])->sum('amount');
+
+        /** =====================================
+         *  FILTER DATA TRANSAKSI
+         *  ===================================== */
         $filteredResult = CashTransaction::query()
             ->with('student', 'createdBy')
             ->when($this->query, function (Builder $query) {
-                return $query->whereHas('student', function ($studentQuery) {
+                return $query->whereHas('student', function (Builder $studentQuery) {
                     return $studentQuery->where('name', 'like', "%{$this->query}%");
                 });
             })
-            ->whereBetween('date_paid', [$this->start_date, $this->end_date]);
+            ->whereBetween('date_paid', [$start, $end])
+            ->orderBy('date_paid', 'desc');
 
-        if ($this->start_date && $this->end_date !== null) {
-            $studentPaidStatus = $this->studentRepository->getStudentPaymentStatus($this->start_date, $this->end_date);
+        /** =====================================
+         *  HITUNG SISWA YANG BELUM BAYAR BULAN INI
+         *  ===================================== */
+        $studentPaidStatus = $this->studentRepository->getStudentPaymentStatus($start, $end);
 
-            $this->statistics['studentsNotPaidLimit'] = $studentPaidStatus['studentsNotPaid']->take(6);
-            $this->statistics['studentsNotPaid'] = $studentPaidStatus['studentsNotPaid'];
-            $this->statistics['studentsNotPaidCount'] = $studentPaidStatus['studentsNotPaid']->count();
-        }
+        $this->statistics['studentsNotPaid'] = $studentPaidStatus['studentsNotPaid'];
+        $this->statistics['studentsNotPaidLimit'] = $studentPaidStatus['studentsNotPaid']->take(6);
+        $this->statistics['studentsNotPaidCount'] = $studentPaidStatus['studentsNotPaid']->count();
 
-        $cashTransactionSummaries = $this->cashTransactionRepository->calculateTransactionSums();
+        /** =====================================
+         *  SUMMARIES (BULAN & TAHUN INI)
+         *  ===================================== */
+$cashTransactionSummaries = $this->cashTransactionRepository
+    ->calculateTransactionSums($this->selected_month);
 
-        $this->statistics['totalToday'] = local_amount_format($cashTransactionSummaries['today']);
-        $this->statistics['totalCurrentWeek'] = local_amount_format($cashTransactionSummaries['week']);
         $this->statistics['totalCurrentMonth'] = local_amount_format($cashTransactionSummaries['month']);
         $this->statistics['totalCurrentYear'] = local_amount_format($cashTransactionSummaries['year']);
 

@@ -9,7 +9,7 @@ use Livewire\Component;
 
 class DeleteCashTransaction extends Component
 {
-    public CashTransaction $cashTransaction;
+    public ?CashTransaction $cashTransaction = null;
 
     /**
      * Render the view.
@@ -23,16 +23,30 @@ class DeleteCashTransaction extends Component
      * Set the specified model instance for the component.
      */
     #[On('cash-transaction-delete')]
-    public function setValue(CashTransaction $cashTransaction): void
-    {
-        $this->cashTransaction = $cashTransaction;
-    }
+public function setValue(CashTransaction $cashTransaction)
+{
+    $this->cashTransaction = $cashTransaction;
+}
+
+public function delete()
+{
+    $this->cashTransaction->delete();
+
+    $this->dispatch('close-modal');
+    $this->dispatch('success', message: 'Data berhasil dihapus!');
+    $this->dispatch('cash-transaction-updated')->to(CashTransactionCurrentWeekTable::class);
+}
+
 
     /**
      * Remove the specified resource from storage and handle the related events.
      */
     public function destroy(): void
     {
+        if (! $this->cashTransaction) {
+            return; // nothing to delete
+        }
+
         $this->cashTransaction->delete();
 
         $this->dispatch('close-modal');

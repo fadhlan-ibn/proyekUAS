@@ -4,67 +4,84 @@ namespace App\Livewire\Forms;
 
 use App\Models\CashTransaction;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 use Livewire\Attributes\Validate;
 use Livewire\Form;
+use Livewire\WithFileUploads;
 
 class UpdateCashTransactionForm extends Form
 {
+    use WithFileUploads;
+
     public ?CashTransaction $cashTransaction;
 
-    #[Validate]
+    #[Validate('required|exists:students,id')]
     public ?string $student_id;
 
+    #[Validate('required|numeric|min:0')]
     public ?string $amount;
 
+    #[Validate('required|date')]
     public ?string $date_paid;
 
+    #[Validate('nullable|string|max:255')]
     public ?string $transaction_note;
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(): void
-    {
-        $this->validate();
+    #[Validate('required|exists:payment_categories,id')]
+    public $payment_category_id;
 
-        $request = collect($this->all())->merge(['created_by' => Auth::id()])->toArray();
+    #[Validate('nullable|file|mimes:jpg,jpeg,png,pdf|max:2048')]
+    public $proof_file;
 
-        $this->cashTransaction->update($request);
+    public ?string $proof_file_path = null;
 
-        $this->reset();
-    }
 
     /**
-     * Get the validation rules that apply to the request.
+     * UPDATE DATA
      */
-    public function rules(): array
-    {
-        return [
-            'student_id' => 'required|exists:students,id',
-            'amount' => 'required|numeric|min:0',
-            'date_paid' => 'required|date',
-            'transaction_note' => 'nullable|string|max:255',
-        ];
+public function update(): void
+{
+    $this->validate();
+
+    // jika upload baru
+    if ($this->proof_file) {
+
+        // normalisasi path lama: hapus prefix 'public/' jika ada
+        if ($this->proof_file_path) {
+            $oldPath = preg_replace('#^public/#', '', $this->proof_file_path);
+
+            // hapus file lama di disk 'public' bila ada
+            if (Storage::disk('public')->exists($oldPath)) {
+                Storage::disk('public')->delete($oldPath);
+            }
+        }
+
+        // simpan file ke disk 'public' dalam folder proofs
+        $path = $this->proof_file->store('proofs', 'public');
+
+        // debug log: pastikan file tersimpan
+        Log::info('UpdateCashTransactionForm: stored proof_file', [
+            'id' => $this->cashTransaction->id ?? null,
+            'path' => $path,
+            'exists_after_store' => Storage::disk('public')->exists($path),
+        ]);
+
+        // simpan path (contoh: proofs/xxxx.png)
+        $this->proof_file_path = $path;
     }
 
-    /**
-     * Get the error messages for the defined validation rules.
-     */
-    public function messages(): array
-    {
-        return [
-            'student_id.required' => 'Pelajar tidak boleh kosong!',
-            'student_id.exists' => 'Pelajar yang dipilih tidak valid!',
+    // update database
+    $this->cashTransaction->update([
+        'student_id'          => $this->student_id,
+        'payment_category_id' => $this->payment_category_id,
+        'amount'              => $this->amount,
+        'date_paid'           => $this->date_paid,
+        'transaction_note'    => $this->transaction_note,
+        'proof_file'          => $this->proof_file_path,
+        'created_by'          => Auth::id(),
+    ]);
+}
 
-            'amount.required' => 'Tagihan tidak boleh kosong!',
-            'amount.numeric' => 'Tagihan harus berupa angka!',
-            'amount.min' => 'Tagihan tidak boleh kurang dari 0!',
 
-            'date_paid.required' => 'Tanggal tidak boleh kosong!',
-            'date_paid.date' => 'Tanggal tidak valid!',
-
-            'transaction_note.string' => 'Catatan transaksi harus berupa teks!',
-            'transaction_note.max' => 'Catatan transaksi harus maksimal :max karakter!',
-        ];
-    }
 }

@@ -72,8 +72,6 @@
               </x-sidebar.sidebar-link>
             </x-sidebar.sidebar-item>
 
-            <li class="sidebar-title"><i class="bi bi-menu-button-wide-fill"></i></li>
-
             <x-sidebar.sidebar-item :active="request()->routeIs('students.index')">
               <x-sidebar.sidebar-link :href="route('students.index')" icon="bi bi-people-fill" wire:navigate>
                 Pelajar
@@ -92,6 +90,18 @@
               </x-sidebar.sidebar-link>
             </x-sidebar.sidebar-item>
 
+<x-sidebar.sidebar-item :active="request()->routeIs('payment-category.index')">
+    <x-sidebar.sidebar-link 
+        :href="route('payment-category.index')" 
+        icon="bi bi-tags-fill" 
+        wire:navigate
+    >
+        Kategori Pembayaran
+    </x-sidebar.sidebar-link>
+</x-sidebar.sidebar-item>
+
+
+
             <x-sidebar.sidebar-item class="has-sub" :active="request()->routeIs('cash-transactions.*')">
               <x-sidebar.sidebar-link href="#" icon="bi bi-cash-stack">
                 Kas
@@ -100,7 +110,7 @@
               <ul class="submenu">
                 <x-sidebar.submenu-item :active="request()->routeIs('cash-transactions.index')">
                   <x-sidebar.submenu-link :href="route('cash-transactions.index')" wire:navigate>
-                    Kas Minggu Ini
+                    Kas
                   </x-sidebar.submenu-link>
                 </x-sidebar.submenu-item>
 
@@ -144,7 +154,7 @@
         <h3>{{ $title ?? config('app.name') }}</h3>
       </div>
       <div class="page-content">
-        {{ $slot }}
+    {{ $slot }}
       </div>
 
       <footer>

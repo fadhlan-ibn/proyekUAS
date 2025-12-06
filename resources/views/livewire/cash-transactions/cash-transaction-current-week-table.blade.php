@@ -306,20 +306,35 @@
                   </td>
                   <td>
                     <div class="btn-group gap-1" role="group">
+
+                        {{-- TOMBOL BARU: UNDUH BUKTI PEMBAYARAN --}}
+                        @if ($cashTransaction->proof_file)
+                          <a href="{{ route('cash-transactions.download', $cashTransaction->id) }}"
+                             class="btn btn-sm btn-info"
+                             aria-label="Unduh bukti pembayaran">
+                              <i class="bi bi-download"></i>
+                          </a>
+                        @endif
+
+                      {{-- TOMBOL EDIT --}}
                       <button wire:loading.attr="disabled"
                         wire:click="$dispatch('cash-transaction-edit', {cashTransaction: {{ $cashTransaction->id }}})"
                         type="button" class="btn btn-sm btn-success rounded" data-bs-toggle="modal"
                         data-bs-target="#editModal">
                         <i class="bi bi-pencil-square"></i>
                       </button>
+
+                      {{-- TOMBOL DELETE --}}
                       <button wire:loading.attr="disabled"
                         wire:click="$dispatch('cash-transaction-delete', {cashTransaction: {{ $cashTransaction->id }}})"
                         type="button" class="btn btn-sm btn-danger rounded" data-bs-toggle="modal"
                         data-bs-target="#deleteModal">
                         <i class="bi bi-trash-fill"></i>
                       </button>
+
                     </div>
                   </td>
+
                 </tr>
                 @empty
                 <tr wire:loading.remove class="text-center">
