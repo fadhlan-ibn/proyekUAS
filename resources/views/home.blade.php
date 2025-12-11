@@ -2,7 +2,7 @@
 
     <!-- <div class="hero">
         <div class="text-center">
-            <h1 class="fw-bold">Selamat Datang di Website Resmi SMK Contoh Negeri 1</h1>
+            <h1 class="fw-bold">Selamat Datang di Website Resmi SMK Negeri 7 Jakarta</h1>
             <p class="fs-5">Sekolah Unggul, Berkarakter, dan Berprestasi</p>
         </div>
     </div> -->

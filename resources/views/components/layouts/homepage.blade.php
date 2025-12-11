@@ -13,7 +13,6 @@
             background-attachment: fixed;
         }
 
-        /* Overlay gelap di seluruh halaman agar teks tidak hilang */
         body::before {
             content: "";
             position: fixed;
@@ -21,9 +20,9 @@
             background: rgba(0, 0, 0, 0.55);
             z-index: -1;
         }
+
         .hero {
             position: relative;
-            
             min-height: 55vh;
             display: flex;
             flex-direction: column;
@@ -75,7 +74,7 @@
     {{-- NAVBAR --}}
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
         <div class="container">
-            <a class="navbar-brand fw-bold" href="/">SMA Negeri 9</a>
+            <a class="navbar-brand fw-bold" href="/">SMK Negeri 7 Jakarta</a>
 
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
@@ -97,7 +96,7 @@
     {{-- HERO --}}
     <section class="hero">
         <img src="{{ asset('logo-sekolah.png') }}" class="hero-logo" alt="Logo Sekolah">
-        <div class="typing">Selamat Datang di Website Resmi SMA Negeri 9 Kota Bogor</div>
+        <div class="typing">Selamat Datang di Website Resmi SMK Negeri 7 Jakarta</div>
     </section>
 
     {{-- KONTEN --}}
@@ -106,7 +105,7 @@
     </main>
 
     <footer class="bg-primary text-light text-center py-3 mt-5">
-        <small>© {{ date('Y') }} SMA Negeri 9 Kota Bogor — Semua Hak Dilindungi</small>
+        <small>© {{ date('Y') }} SMK Negeri 7 Jakarta — Semua Hak Dilindungi</small>
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
